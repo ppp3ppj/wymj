@@ -14,7 +14,7 @@
 *.out
 
 # IDE files
-*.vscode
+.vscode
 .DS_Store
 .idea
 
@@ -26,15 +26,15 @@
 
 # Dependencies
 /vendor/
-verdor/
+vendor/
 vendor
 /Godeps/
 /assets
 
 # Customs
-*.env
+*.env*
 .air*
 /tmp
 *.pem
 apikey.txt
-*_test.go
+*.txt
