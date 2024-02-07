@@ -5,6 +5,7 @@ import (
 	"os"
 
 	"github.com/ppp3ppj/wymj/config"
+	"github.com/ppp3ppj/wymj/modules/servers"
 	"github.com/ppp3ppj/wymj/pkg/databases"
 )
 
@@ -23,4 +24,6 @@ func main() {
     fmt.Println(cfg.Jwt())
     db := databases.DbConnect(cfg.Db())
     fmt.Println(db)
+
+    servers.NewServer(cfg, db).Start()
 }
