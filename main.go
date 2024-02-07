@@ -1,9 +1,11 @@
 package main
 
 import (
+	"fmt"
 	"os"
-    "fmt"
+
 	"github.com/ppp3ppj/wymj/config"
+	"github.com/ppp3ppj/wymj/pkg/databases"
 )
 
 func envPath() string {
@@ -19,4 +21,6 @@ func main() {
     fmt.Println(cfg.App())
     fmt.Println(cfg.Db())
     fmt.Println(cfg.Jwt())
+    db := databases.DbConnect(cfg.Db())
+    fmt.Println(db)
 }
