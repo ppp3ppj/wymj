@@ -39,10 +39,12 @@ func NewServer(cfg config.IConfig, db *sqlx.DB) IServer {
 
 func (s *server) Start() {
     // Middlewares
+    middlewares := InitMiddleware(s)
+    s.app.Use(middlewares.Cors())
     // Modules
     // http://localhost:3000/v1
     v1 := s.app.Group("/v1")
-    modules := InitModule(v1, s)
+    modules := InitModule(v1, s, middlewares)
     modules.MonitorModule()
     // Graceful shutdown
     c := make(chan os.Signal, 1)
