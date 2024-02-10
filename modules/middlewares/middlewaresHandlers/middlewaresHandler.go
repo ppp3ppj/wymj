@@ -3,6 +3,7 @@ package middlewaresHandlers
 import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
+	"github.com/gofiber/fiber/v2/middleware/logger"
 	"github.com/ppp3ppj/wymj/config"
 	"github.com/ppp3ppj/wymj/modules/entities"
 	"github.com/ppp3ppj/wymj/modules/middlewares/middlewaresUsecases"
@@ -17,6 +18,7 @@ const (
 type IMiddlewaresHandler interface {
     Cors() fiber.Handler
     RouterCheck() fiber.Handler
+    Logger() fiber.Handler
 }
 
 type middlewaresHandler struct {
@@ -53,3 +55,10 @@ func (h *middlewaresHandler) RouterCheck() fiber.Handler {
     }
 }
 
+func (h *middlewaresHandler) Logger() fiber.Handler {
+    return logger.New(logger.Config{
+        Format: "${time} [${ip}] ${status} - ${method} ${path}\n",
+        TimeFormat: "01/02/2006",
+        TimeZone: "Bangkok/Asia",
+    })
+}
