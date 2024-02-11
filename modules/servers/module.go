@@ -6,10 +6,14 @@ import (
 	"github.com/ppp3ppj/wymj/modules/middlewares/middlewaresRepositories"
 	"github.com/ppp3ppj/wymj/modules/middlewares/middlewaresUsecases"
 	"github.com/ppp3ppj/wymj/modules/monitor/monitorHandlers"
+	"github.com/ppp3ppj/wymj/modules/users/usersHandlers"
+	"github.com/ppp3ppj/wymj/modules/users/usersRepositories"
+	"github.com/ppp3ppj/wymj/modules/users/usersUsecases"
 )
 
 type IModuleFactory interface {
     MonitorModule()
+    UserModule()
 }
 
 type moduleFactory struct {
@@ -39,3 +43,13 @@ func (m *moduleFactory) MonitorModule() {
     m.r.Get("/health", handler.HealthCheck)
 }
 
+func (m *moduleFactory) UserModule() {
+    repository := usersRepositories.UsersRepository(m.s.db)
+    usecase := usersUsecases.UsersUsecase(m.s.cfg, repository)
+    handler := usersHandlers.UsersHandler(m.s.cfg, usecase)
+
+    // Group routes to user = /v1/users/signup
+    router := m.r.Group("/users")
+
+    router.Post("/signup", handler.SignUpCustomer)
+}
