@@ -71,13 +71,15 @@ func (f *userReq) Customer() (IInsertUser, error) {
     VALUES ($1, $2, $3, 1)
     RETURNING "id";`
 
+    fmt.Println(f.req.Email, f.req.Username, f.req.Password)
+
     if err := f.db.QueryRowContext(
         ctx,
         query,
         f.req.Email,
         f.req.Username,
         f.req.Password,
-        1,
+        //1,
     ).Scan(&f.id); err != nil {
         switch err.Error() {
             case "ERROR: duplicate key value violates unique constraint \"users_username_key\" (SQLSTATE 23505)":
