@@ -1,7 +1,9 @@
 package usersRepositories
 
 import (
+	"context"
 	"fmt"
+	"time"
 
 	"github.com/jmoiron/sqlx"
 	"github.com/ppp3ppj/wymj/modules/users"
@@ -12,6 +14,7 @@ import (
 type IUserRepository interface {
     InsertUser(req *users.UserRegisterReq, isAdmin bool) (*users.UserPassport, error)
     FindOneUserByEmail(email string) (*users.UserCredentialCheck, error)
+    InsertOauth(req *users.UserPassport) error
 }
 
 type userRepository struct {
@@ -63,4 +66,30 @@ func (r *userRepository) FindOneUserByEmail(email string) (*users.UserCredential
         return nil, fmt.Errorf("user not found: %v", err)
     }
     return user, nil
+}
+
+func (r *userRepository) InsertOauth(req *users.UserPassport) error {
+    // set timeout for query 10s
+    ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+    defer cancel()
+    query := `
+    INSERT INTO "oauth" (
+        "user_id",
+        "refresh_token",
+        "access_token"
+    )
+    VALUES ($1, $2, $3)
+    RETURNING "id";`
+
+    if err := r.db.QueryRowContext(
+        ctx,
+        query,
+        req.User.Id,
+        req.Token.AccessToken,
+        req.Token.RefreshToken,
+    ).Scan(&req.Token.Id); err != nil {
+        return fmt.Errorf("insert oauth failed: %v", err)
+    }
+
+    return nil
 }

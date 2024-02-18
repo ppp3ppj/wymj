@@ -6,6 +6,7 @@ import (
 	"github.com/ppp3ppj/wymj/config"
 	"github.com/ppp3ppj/wymj/modules/users"
 	"github.com/ppp3ppj/wymj/modules/users/usersRepositories"
+	"github.com/ppp3ppj/wymj/pkg/wymjauth"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -51,6 +52,16 @@ func (u *userUsecase) GetPassport(req *users.UserCredential) (*users.UserPasspor
         return nil, fmt.Errorf("password is invalid")
     }
 
+    accessToken, err := wymjauth.NewWymjAuth(wymjauth.Access, u.cfg.Jwt(), &users.UserClaims{
+        Id: user.Id,
+        RoleId: user.RoleId,
+    })
+
+    refreshToken, err := wymjauth.NewWymjAuth(wymjauth.Refresh, u.cfg.Jwt(), &users.UserClaims{
+        Id: user.Id,
+        RoleId: user.RoleId,
+    })
+
     // Set user passport
     passport := &users.UserPassport{
         User: &users.User{
@@ -59,7 +70,14 @@ func (u *userUsecase) GetPassport(req *users.UserCredential) (*users.UserPasspor
             Username: user.Username,
             RoleId: user.RoleId,
         },
-        Token: nil,
+        Token: &users.UserToken{
+            AccessToken: accessToken.SignToken(),
+            RefreshToken: refreshToken.SignToken(),
+        },
+    }
+
+    if err := u.userRepository.InsertOauth(passport); err != nil {
+        return nil, err
     }
     return passport, nil
 }
