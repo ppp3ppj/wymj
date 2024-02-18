@@ -1,6 +1,7 @@
 package wymjauth
 
 import (
+	"errors"
 	"fmt"
 	"math"
 	"time"
@@ -45,6 +46,50 @@ func (w *wymjAuth) SignToken() string {
     token := jwt.NewWithClaims(jwt.SigningMethodHS256, w.mapClaims)
     ss, _ := token.SignedString(w.cfg.SecretKey())
     return ss
+}
+
+func ParseToken(cfg config.IJwtconfig, tokenString string) (*wymjMapClaims, error) {
+    token, err := jwt.ParseWithClaims(tokenString, &wymjMapClaims{
+    }, func(t *jwt.Token) (interface{}, error) {
+        if _, ok := t.Method.(*jwt.SigningMethodHMAC); !ok {
+            return nil, fmt.Errorf("signing method is invalid")
+        }
+        return cfg.SecretKey(), nil
+    })
+
+    if err != nil {
+        if errors.Is(err, jwt.ErrTokenMalformed) {
+            return nil, fmt.Errorf("token malformed is invalid")
+        } else if errors.Is(err, jwt.ErrTokenExpired) {
+            return nil, fmt.Errorf("token had expired")
+        } else {
+            return nil, fmt.Errorf("parse token failed: %v", err)
+        }
+    }
+
+    if claims, ok := token.Claims.(*wymjMapClaims); ok {
+        return claims, nil
+    } else {
+        return nil, fmt.Errorf("claims type is invalid")
+    }
+}
+
+func RepeatToken(cfg config.IJwtconfig, claims *users.UserClaims, exp int64) string {
+    obj := &wymjAuth{
+        cfg: cfg,
+        mapClaims: &wymjMapClaims{
+            Claims: claims,
+            RegisteredClaims: jwt.RegisteredClaims{
+                Issuer: "wymj-api",
+                Subject: "refresh-token",
+                Audience: []string{"customer", "admin"},
+                ExpiresAt: jwtTimeRepeatAdapter(exp),
+                NotBefore: jwt.NewNumericDate(time.Now()),
+                IssuedAt: jwt.NewNumericDate(time.Now()),
+            },
+        },
+    }
+    return obj.SignToken()
 }
 
 func NewWymjAuth(tokenType TokenType, cfg config.IJwtconfig, claims *users.UserClaims) (IWymjAuth, error) {
