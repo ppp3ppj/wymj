@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"time"
-
 	"github.com/jmoiron/sqlx"
 	"github.com/ppp3ppj/wymj/modules/users"
 )
@@ -70,8 +69,6 @@ func (f *userReq) Customer() (IInsertUser, error) {
     ) 
     VALUES ($1, $2, $3, 1)
     RETURNING "id";`
-
-    fmt.Println(f.req.Email, f.req.Username, f.req.Password)
 
     if err := f.db.QueryRowContext(
         ctx,
