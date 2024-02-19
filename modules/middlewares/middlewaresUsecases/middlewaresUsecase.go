@@ -5,7 +5,7 @@ import "github.com/ppp3ppj/wymj/modules/middlewares/middlewaresRepositories"
 
 
 type IMiddlewaresUsecase interface {
-
+    FindAccessToken(userId, accessToken string) bool
 }
 
 type middlewaresUsecase struct {
@@ -16,4 +16,8 @@ func MiddlewaresUsecase(middlewaresRepository middlewaresRepositories.IMiddlewar
     return &middlewaresUsecase{
         middlewaresRepository: middlewaresRepository,
     }
+}
+
+func (u *middlewaresUsecase) FindAccessToken(userId, accessToken string) bool {
+    return u.middlewaresRepository.FindAccessToken(userId, accessToken)
 }
