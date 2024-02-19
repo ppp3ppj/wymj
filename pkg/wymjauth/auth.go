@@ -25,12 +25,20 @@ type wymjAuth struct {
     cfg config.IJwtconfig
 }
 
+type wymjAdmin struct {
+    *wymjAuth
+}
+
 type wymjMapClaims struct {
     Claims *users.UserClaims `json:"claims"`
     jwt.RegisteredClaims 
 }
 
 type IWymjAuth interface {
+    SignToken() string
+}
+
+type IWymjAdmin interface {
     SignToken() string
 }
 
@@ -48,6 +56,12 @@ func (w *wymjAuth) SignToken() string {
     return ss
 }
 
+func (a *wymjAdmin) SignToken() string {
+    token := jwt.NewWithClaims(jwt.SigningMethodHS256, a.mapClaims)
+    ss, _ := token.SignedString(a.cfg.AdminKey())
+    return ss
+}
+
 func ParseToken(cfg config.IJwtconfig, tokenString string) (*wymjMapClaims, error) {
     token, err := jwt.ParseWithClaims(tokenString, &wymjMapClaims{
     }, func(t *jwt.Token) (interface{}, error) {
@@ -55,6 +69,32 @@ func ParseToken(cfg config.IJwtconfig, tokenString string) (*wymjMapClaims, erro
             return nil, fmt.Errorf("signing method is invalid")
         }
         return cfg.SecretKey(), nil
+    })
+
+    if err != nil {
+        if errors.Is(err, jwt.ErrTokenMalformed) {
+            return nil, fmt.Errorf("token malformed is invalid")
+        } else if errors.Is(err, jwt.ErrTokenExpired) {
+            return nil, fmt.Errorf("token had expired")
+        } else {
+            return nil, fmt.Errorf("parse token failed: %v", err)
+        }
+    }
+
+    if claims, ok := token.Claims.(*wymjMapClaims); ok {
+        return claims, nil
+    } else {
+        return nil, fmt.Errorf("claims type is invalid")
+    }
+}
+
+func ParseAdminToken(cfg config.IJwtconfig, tokenString string) (*wymjMapClaims, error) {
+    token, err := jwt.ParseWithClaims(tokenString, &wymjMapClaims{
+    }, func(t *jwt.Token) (interface{}, error) {
+        if _, ok := t.Method.(*jwt.SigningMethodHMAC); !ok {
+            return nil, fmt.Errorf("signing method is invalid")
+        }
+        return cfg.AdminKey(), nil
     })
 
     if err != nil {
@@ -98,12 +138,14 @@ func NewWymjAuth(tokenType TokenType, cfg config.IJwtconfig, claims *users.UserC
             return newAccessToken(cfg, claims), nil
         case Refresh:
             return newRefreshToken(cfg, claims), nil
+        case Admin:
+            return newAdminToken(cfg), nil
         default:
             return nil, fmt.Errorf("unknown token type")
     }
 }
 
-func newAccessToken(cfg config.IJwtconfig, claims *users.UserClaims) *wymjAuth {
+func newAccessToken(cfg config.IJwtconfig, claims *users.UserClaims) IWymjAuth {
     return &wymjAuth{
         cfg: cfg,
         mapClaims: &wymjMapClaims{
@@ -120,7 +162,7 @@ func newAccessToken(cfg config.IJwtconfig, claims *users.UserClaims) *wymjAuth {
     }
 }
 
-func newRefreshToken(cfg config.IJwtconfig, claims *users.UserClaims) *wymjAuth {
+func newRefreshToken(cfg config.IJwtconfig, claims *users.UserClaims) IWymjAuth {
     return &wymjAuth{
         cfg: cfg,
         mapClaims: &wymjMapClaims{
@@ -133,6 +175,26 @@ func newRefreshToken(cfg config.IJwtconfig, claims *users.UserClaims) *wymjAuth 
                 NotBefore: jwt.NewNumericDate(time.Now()),
                 IssuedAt: jwt.NewNumericDate(time.Now()),
             },
+        },
+    }
+}
+
+func newAdminToken(cfg config.IJwtconfig) IWymjAuth {
+    return &wymjAdmin{
+        wymjAuth: &wymjAuth{
+            cfg: cfg,
+            mapClaims: &wymjMapClaims{
+            Claims: nil,
+            RegisteredClaims: jwt.RegisteredClaims{
+                Issuer: "wymj-api",
+                Subject: "admin-token",
+                Audience: []string{"admin"},
+                ExpiresAt: jwtTimeDurationCal(300), // 5 minutes
+                NotBefore: jwt.NewNumericDate(time.Now()),
+                IssuedAt: jwt.NewNumericDate(time.Now()),
+            },
+        },
+
         },
     }
 }

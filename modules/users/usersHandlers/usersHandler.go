@@ -6,6 +6,7 @@ import (
 	"github.com/ppp3ppj/wymj/modules/entities"
 	"github.com/ppp3ppj/wymj/modules/users"
 	"github.com/ppp3ppj/wymj/modules/users/usersUsecases"
+	"github.com/ppp3ppj/wymj/pkg/wymjauth"
 )
 
 type userHandlerErrCode string 
@@ -14,6 +15,8 @@ const (
     signInErr userHandlerErrCode = "users-002"
     refreshPassportErr userHandlerErrCode = "users-003"
     signOutErr userHandlerErrCode = "users-004"
+    singupAdminErr userHandlerErrCode = "users-005"
+    generateAdminTokenErr userHandlerErrCode = "users-006"
 )
 
 type IUsersHandler interface {
@@ -21,6 +24,8 @@ type IUsersHandler interface {
     SignIn(c *fiber.Ctx) error
     RefreshPassport(c *fiber.Ctx) error
     SignOut(c *fiber.Ctx) error
+    SignUpAdmin(c *fiber.Ctx) error
+    GenerateAdminToken(c *fiber.Ctx) error
 }
 
 type usersHandler struct {
@@ -142,4 +147,70 @@ func (h *usersHandler) SignOut(c *fiber.Ctx) error {
     }
 
     return entities.NewResponse(c).Success(fiber.StatusOK, nil).Res()
+}
+
+func (h *usersHandler) SignUpAdmin(c *fiber.Ctx) error {
+    // Request body parsing
+    req := new(users.UserRegisterReq)
+    if err := c.BodyParser(req); err != nil {
+        return entities.NewResponse(c).Error(
+            fiber.ErrBadRequest.Code,
+            string(signupCustomerErr),
+            err.Error(),
+        ).Res()
+    }
+    // Email validation
+    if !req.IsEmail() {
+        return entities.NewResponse(c).Error(
+            fiber.ErrBadRequest.Code,
+            string(signupCustomerErr),
+            "email pattern is invalid",
+        ).Res()
+    }
+    // Insert users
+    result, err := h.usersUsecase.InsertCustomer(req)
+    if err != nil {
+        switch err.Error() {
+            case "username has been used": 
+                return entities.NewResponse(c).Error(
+                    fiber.ErrBadRequest.Code,
+                    string(signupCustomerErr),
+                    err.Error(),
+                ).Res()
+            case "email has been used":
+                return entities.NewResponse(c).Error(
+                    fiber.ErrBadRequest.Code,
+                    string(signupCustomerErr),
+                    err.Error(),
+                ).Res()
+            default:
+                return entities.NewResponse(c).Error(
+                    fiber.ErrInternalServerError.Code,
+                    string(signupCustomerErr),
+                    err.Error(),
+                ).Res()
+        }
+    }
+    return entities.NewResponse(c).Success(fiber.StatusCreated, result).Res()
+}
+
+func (h *usersHandler) GenerateAdminToken(c *fiber.Ctx) error {
+    adminToken, err := wymjauth.NewWymjAuth(
+        wymjauth.Admin,
+        h.cfg.Jwt(),
+        nil,
+    )
+    if err != nil {
+        return entities.NewResponse(c).Error(
+            fiber.ErrInternalServerError.Code,
+            string(generateAdminTokenErr),
+            err.Error(),
+        ).Res()
+    }
+
+    return entities.NewResponse(c).Success(fiber.StatusOK, &struct{
+        Token string `json:"token"`
+    }{
+        Token: adminToken.SignToken(),
+    }).Res()
 }
