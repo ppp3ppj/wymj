@@ -17,6 +17,7 @@ type middlewaresHandlerErrCode string
 const (
 	routerCheckErr middlewaresHandlerErrCode = "middleware-001"
 	jwtAuthErr     middlewaresHandlerErrCode = "middleware-002"
+    paramsCheckErr middlewaresHandlerErrCode = "middleware-003"
 )
 
 type IMiddlewaresHandler interface {
@@ -24,6 +25,7 @@ type IMiddlewaresHandler interface {
 	RouterCheck() fiber.Handler
 	Logger() fiber.Handler
 	JwtAuth() fiber.Handler
+    ParamsCheck() fiber.Handler
 }
 
 type middlewaresHandler struct {
@@ -94,3 +96,18 @@ func (h *middlewaresHandler) JwtAuth() fiber.Handler {
 		return c.Next()
 	}
 }
+
+func (h *middlewaresHandler) ParamsCheck() fiber.Handler {
+    return func(c *fiber.Ctx) error {
+        userId := c.Locals("userId")
+        if c.Params("user_id") != userId {
+            return entities.NewResponse(c).Error(
+                fiber.ErrUnauthorized.Code,
+                string(paramsCheckErr),
+                "never gonna give you up",
+            ).Res()
+        }
+        return c.Next()
+    }
+}
+

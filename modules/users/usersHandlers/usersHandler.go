@@ -1,6 +1,8 @@
 package usersHandlers
 
 import (
+	"strings"
+
 	"github.com/gofiber/fiber/v2"
 	"github.com/ppp3ppj/wymj/config"
 	"github.com/ppp3ppj/wymj/modules/entities"
@@ -17,6 +19,7 @@ const (
     signOutErr userHandlerErrCode = "users-004"
     singupAdminErr userHandlerErrCode = "users-005"
     generateAdminTokenErr userHandlerErrCode = "users-006"
+    getUserProfileErr userHandlerErrCode = "users-007"
 )
 
 type IUsersHandler interface {
@@ -26,6 +29,7 @@ type IUsersHandler interface {
     SignOut(c *fiber.Ctx) error
     SignUpAdmin(c *fiber.Ctx) error
     GenerateAdminToken(c *fiber.Ctx) error
+    GetUserProfile(c *fiber.Ctx) error
 }
 
 type usersHandler struct {
@@ -213,4 +217,27 @@ func (h *usersHandler) GenerateAdminToken(c *fiber.Ctx) error {
     }{
         Token: adminToken.SignToken(),
     }).Res()
+}
+
+func (h *usersHandler) GetUserProfile(c *fiber.Ctx) error {
+    userId := strings.Trim(c.Params("user_id"), " ")
+
+    result, err := h.usersUsecase.GetUserProfile(userId)
+    if err != nil {
+        switch err.Error() {
+        case "get user faild: sql: no rows in result set":
+            return entities.NewResponse(c).Error(
+                fiber.ErrNotFound.Code,
+                string(getUserProfileErr),
+                err.Error(),
+            ).Res()
+        default:
+            return entities.NewResponse(c).Error(
+                fiber.ErrInternalServerError.Code,
+                string(getUserProfileErr),
+                err.Error(),
+            ).Res()
+        }
+    }
+    return entities.NewResponse(c).Success(fiber.StatusOK, result).Res()
 }
