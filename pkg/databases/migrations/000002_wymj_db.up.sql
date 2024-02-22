@@ -19,7 +19,7 @@ INSERT INTO "users" (
     "role_id"
 )
 VALUES
-    ('admin001', 'admin001@kawaii.com', '$2a$10$3qqNPE.TJpNGYCohjTgw9.v1z0ckovx95AmiEtUXcixGAgfW7.wCi', 2);
+    ('admin001', 'admin001@wymj.com', '$2a$10$1831XAyshaTgc2x7McdWU.H9BwobvlXmiBr.5gDIAfhYcGBXbAo2W', 2);
 --  ('U0000001', 'admin', 'adminpassword', 'admin@example.com', 2),
 --  ('U0000002', 'user1', 'password1', 'user1@example.com', 1),
 --  ('U0000003', 'user2', 'password2', 'user2@example.com', 1);
