@@ -63,8 +63,7 @@ func (a *wymjAdmin) SignToken() string {
 }
 
 func ParseToken(cfg config.IJwtconfig, tokenString string) (*wymjMapClaims, error) {
-    token, err := jwt.ParseWithClaims(tokenString, &wymjMapClaims{
-    }, func(t *jwt.Token) (interface{}, error) {
+    token, err := jwt.ParseWithClaims(tokenString, &wymjMapClaims{}, func(t *jwt.Token) (interface{}, error) {
         if _, ok := t.Method.(*jwt.SigningMethodHMAC); !ok {
             return nil, fmt.Errorf("signing method is invalid")
         }

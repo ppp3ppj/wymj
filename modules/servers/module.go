@@ -59,5 +59,5 @@ func (m *moduleFactory) UserModule() {
 
     router.Get("/:user_id", m.mid.JwtAuth(), m.mid.ParamsCheck(), handler.GetUserProfile)
     //router.Get("/:user_id", handler.GetUserProfile)
-    router.Get("/secret", m.mid.JwtAuth(), handler.GenerateAdminToken)
+    router.Get("/admin/secret", m.mid.JwtAuth(),m.mid.Authorize(2), handler.GenerateAdminToken)
 }

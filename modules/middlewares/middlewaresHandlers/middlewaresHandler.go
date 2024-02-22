@@ -10,6 +10,7 @@ import (
 	"github.com/ppp3ppj/wymj/config"
 	"github.com/ppp3ppj/wymj/modules/entities"
 	"github.com/ppp3ppj/wymj/modules/middlewares/middlewaresUsecases"
+	"github.com/ppp3ppj/wymj/pkg/utils"
 	"github.com/ppp3ppj/wymj/pkg/wymjauth"
 )
 
@@ -19,6 +20,7 @@ const (
 	routerCheckErr middlewaresHandlerErrCode = "middleware-001"
 	jwtAuthErr     middlewaresHandlerErrCode = "middleware-002"
     paramsCheckErr middlewaresHandlerErrCode = "middleware-003"
+    authorizeErr   middlewaresHandlerErrCode = "middleware-004"
 )
 
 type IMiddlewaresHandler interface {
@@ -27,6 +29,7 @@ type IMiddlewaresHandler interface {
 	Logger() fiber.Handler
 	JwtAuth() fiber.Handler
     ParamsCheck() fiber.Handler
+    Authorize(expectReleId ...int) fiber.Handler
 }
 
 type middlewaresHandler struct {
@@ -114,3 +117,42 @@ func (h *middlewaresHandler) ParamsCheck() fiber.Handler {
     }
 }
 
+func (h *middlewaresHandler) Authorize(expectReleId ...int) fiber.Handler {
+    return func(c *fiber.Ctx) error {
+        userRoleId, ok := c.Locals("userRoleId").(int)
+        if !ok {
+            return entities.NewResponse(c).Error(
+                fiber.ErrUnauthorized.Code,
+                string(authorizeErr),
+                "user_id is not int type",
+            ).Res()
+        }
+        roles, err := h.middlewaresUsecase.FindRole()
+        if err != nil {
+            return entities.NewResponse(c).Error(
+                fiber.ErrInternalServerError.Code,
+                string(authorizeErr),
+                err.Error(),
+            ).Res()
+        }
+
+        sum := 0
+        for _, roleId := range expectReleId {
+            sum += roleId
+        }
+
+        expectedVauleBinary := utils.BinaryConverter(sum, len(roles))
+        userVauleBinary := utils.BinaryConverter(userRoleId, len(roles))
+        // loop compare bitwise 
+        for i := range expectedVauleBinary {
+            if userVauleBinary[i]&expectedVauleBinary[i] == 1 {
+                return c.Next()
+            }
+        }
+        return entities.NewResponse(c).Error(
+            fiber.ErrUnauthorized.Code,
+            string(authorizeErr),
+            "no permission to access",
+        ).Res()
+    }
+}
