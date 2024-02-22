@@ -200,13 +200,11 @@ func (h *usersHandler) SignUpAdmin(c *fiber.Ctx) error {
 }
 
 func (h *usersHandler) GenerateAdminToken(c *fiber.Ctx) error {
-    fmt.Println("adminKey : ", h.cfg.Jwt().AdminKey())
     adminToken, err := wymjauth.NewWymjAuth(
         wymjauth.Admin,
         h.cfg.Jwt(),
         nil,
     )
-    fmt.Println("adminToken : ", adminToken)
     if err != nil {
         return entities.NewResponse(c).Error(
             fiber.ErrInternalServerError.Code,
@@ -224,8 +222,6 @@ func (h *usersHandler) GenerateAdminToken(c *fiber.Ctx) error {
 
 func (h *usersHandler) GetUserProfile(c *fiber.Ctx) error {
     userId := strings.Trim(c.Params("user_id"), " ")
-
-    fmt.Println("userId agent : ", userId)
 
     result, err := h.usersUsecase.GetUserProfile(userId)
     if err != nil {

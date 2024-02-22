@@ -54,7 +54,6 @@ func (r *userRepository) InsertUser(req *users.UserRegisterReq, isAdmin bool) (*
 }
 
 func (r *userRepository) FindOneUserByEmail(email string) (*users.UserCredentialCheck, error) {
-    fmt.Println("email: ", email)
     query := `
     SELECT
         "id",
@@ -127,7 +126,6 @@ func (r *userRepository) UpdateOauth(req *users.UserToken) error {
 }
 
 func (r *userRepository) GetProfile(userId string) (*users.User, error) {
-    fmt.Println("userId:  ppppp : ", userId)
     query := `
     SELECT
         "id",

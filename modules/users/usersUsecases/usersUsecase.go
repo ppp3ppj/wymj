@@ -58,7 +58,6 @@ func (u *userUsecase) InsertAdmin(req *users.UserRegisterReq) (*users.UserPasspo
 }
 
 func (u *userUsecase) GetPassport(req *users.UserCredential) (*users.UserPassport, error) {
-    fmt.Println("req: ppp", req)
     // Find user
     user, err := u.userRepository.FindOneUserByEmail(req.Email)
     if err != nil {
@@ -114,7 +113,6 @@ func (u *userUsecase) RefreshPassport(req *users.UserRefreshCredential) (*users.
     }
 
     // Find user profile
-    fmt.Println("oauth.UserId: ", oauth.UserId)
     profile, err := u.userRepository.GetProfile(oauth.UserId)
 
     newClaims := &users.UserClaims{
