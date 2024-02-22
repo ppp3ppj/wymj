@@ -79,8 +79,8 @@ func (r *userRepository) InsertOauth(req *users.UserPassport) error {
     query := `
     INSERT INTO "oauth" (
         "user_id",
-        "refresh_token",
-        "access_token"
+        "access_token",
+        "refresh_token"
     )
     VALUES ($1, $2, $3)
     RETURNING "id";`
@@ -102,7 +102,7 @@ func (r *userRepository) FindOneOauth(refreshToken string) (*users.Oauth, error)
     query := `
     SELECT 
         "id",
-        "user_id",
+        "user_id"
     FROM "oauth"
     WHERE "refresh_token" = $1;`
 
@@ -127,6 +127,7 @@ func (r *userRepository) UpdateOauth(req *users.UserToken) error {
 }
 
 func (r *userRepository) GetProfile(userId string) (*users.User, error) {
+    fmt.Println("userId:  ppppp : ", userId)
     query := `
     SELECT
         "id",

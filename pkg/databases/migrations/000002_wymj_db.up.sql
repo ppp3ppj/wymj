@@ -12,7 +12,14 @@ INSERT INTO "categories" ("name") VALUES
 
 -- Mock data for users
 
---INSERT INTO "users" ("id", "username", "password", "email", "role_id") VALUES
+INSERT INTO "users" (
+    "username",
+    "email",
+    "password",
+    "role_id"
+)
+VALUES
+    ('admin001', 'admin001@kawaii.com', '$2a$10$3qqNPE.TJpNGYCohjTgw9.v1z0ckovx95AmiEtUXcixGAgfW7.wCi', 2);
 --  ('U0000001', 'admin', 'adminpassword', 'admin@example.com', 2),
 --  ('U0000002', 'user1', 'password1', 'user1@example.com', 1),
 --  ('U0000003', 'user2', 'password2', 'user2@example.com', 1);

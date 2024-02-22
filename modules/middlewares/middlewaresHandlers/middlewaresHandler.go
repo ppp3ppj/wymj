@@ -1,6 +1,7 @@
 package middlewaresHandlers
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/gofiber/fiber/v2"
@@ -74,6 +75,7 @@ func (h *middlewaresHandler) JwtAuth() fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		token := strings.TrimPrefix(c.Get("Authorization"), "Bearer ")
 		result, err := wymjauth.ParseToken(h.cfg.Jwt(), token)
+        fmt.Println(result, err)
 		if err != nil {
 			return entities.NewResponse(c).Error(
 				fiber.ErrUnauthorized.Code,
@@ -83,6 +85,7 @@ func (h *middlewaresHandler) JwtAuth() fiber.Handler {
 		}
 
 		claims := result.Claims
+        fmt.Println(claims)
 		if !h.middlewaresUsecase.FindAccessToken(claims.Id, token) {
 			return entities.NewResponse(c).Error(
 				fiber.ErrUnauthorized.Code,
