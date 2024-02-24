@@ -1,7 +1,6 @@
 package middlewaresHandlers
 
 import (
-	"fmt"
 	"strings"
 
 	"github.com/gofiber/fiber/v2"
