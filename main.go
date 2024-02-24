@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"os"
 
 	"github.com/ppp3ppj/wymj/config"
@@ -19,11 +18,6 @@ func envPath() string {
 
 func main() {
     cfg := config.LoadConfig(envPath())
-    fmt.Println(cfg.App())
-    fmt.Println(cfg.Db())
-    fmt.Println(cfg.Jwt())
     db := databases.DbConnect(cfg.Db())
-    fmt.Println(db)
-
     servers.NewServer(cfg, db).Start()
 }
