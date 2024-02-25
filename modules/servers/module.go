@@ -2,6 +2,9 @@ package servers
 
 import (
 	"github.com/gofiber/fiber/v2"
+	appinfohandlers "github.com/ppp3ppj/wymj/modules/appinfo/appinfoHandlers"
+	"github.com/ppp3ppj/wymj/modules/appinfo/appinfoRepositories"
+	"github.com/ppp3ppj/wymj/modules/appinfo/appinfoUsecases"
 	"github.com/ppp3ppj/wymj/modules/middlewares/middlewaresHandlers"
 	"github.com/ppp3ppj/wymj/modules/middlewares/middlewaresRepositories"
 	"github.com/ppp3ppj/wymj/modules/middlewares/middlewaresUsecases"
@@ -14,6 +17,7 @@ import (
 type IModuleFactory interface {
     MonitorModule()
     UserModule()
+    AppinfoModule()
 }
 
 type moduleFactory struct {
@@ -51,13 +55,21 @@ func (m *moduleFactory) UserModule() {
     // Group routes to user = /v1/users/signup
     router := m.r.Group("/users")
 
-    router.Post("/signup", handler.SignUpCustomer)
-    router.Post("/signin", handler.SignIn)
-    router.Post("/refresh", handler.RefreshPassport)
-    router.Post("/signout", handler.SignOut)
-    router.Post("/signup-admin", handler.SignUpAdmin)
+    router.Post("/signup", m.mid.ApiKeyAuth(), handler.SignUpCustomer)
+    router.Post("/signin", m.mid.ApiKeyAuth(), handler.SignIn)
+    router.Post("/refresh", m.mid.ApiKeyAuth(), handler.RefreshPassport)
+    router.Post("/signout", m.mid.ApiKeyAuth(), handler.SignOut)
+    router.Post("/signup-admin", m.mid.JwtAuth(), m.mid.Authorize(2), handler.SignUpAdmin)
 
     router.Get("/:user_id", m.mid.JwtAuth(), m.mid.ParamsCheck(), handler.GetUserProfile)
-    //router.Get("/:user_id", handler.GetUserProfile)
-    router.Get("/admin/secret", m.mid.JwtAuth(),m.mid.Authorize(2), handler.GenerateAdminToken)
+    router.Get("/admin/secret", m.mid.JwtAuth(), m.mid.Authorize(2), handler.GenerateAdminToken)
+}
+
+func (m *moduleFactory) AppinfoModule() {
+    repository := appinfoRepositories.AppinfoRepository(m.s.db)
+    usecase := appinfoUsecases.AppinfoUsecase(repository)
+    handler := appinfohandlers.AppinfoHandler(m.s.cfg, usecase)
+
+    router := m.r.Group("/appinfo")
+    router.Get("/apikey", m.mid.JwtAuth(), m.mid.Authorize(2), handler.GenerateApiKey)
 }

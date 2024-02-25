@@ -29,6 +29,10 @@ type wymjAdmin struct {
     *wymjAuth
 }
 
+type wymjApiKey struct {
+    *wymjAuth
+}
+
 type wymjMapClaims struct {
     Claims *users.UserClaims `json:"claims"`
     jwt.RegisteredClaims 
@@ -39,6 +43,10 @@ type IWymjAuth interface {
 }
 
 type IWymjAdmin interface {
+    SignToken() string
+}
+
+type IWymjApiKey interface {
     SignToken() string
 }
 
@@ -59,6 +67,12 @@ func (w *wymjAuth) SignToken() string {
 func (a *wymjAdmin) SignToken() string {
     token := jwt.NewWithClaims(jwt.SigningMethodHS256, a.mapClaims)
     ss, _ := token.SignedString(a.cfg.AdminKey())
+    return ss
+}
+
+func (a *wymjApiKey) SignToken() string {
+    token := jwt.NewWithClaims(jwt.SigningMethodHS256, a.mapClaims)
+    ss, _ := token.SignedString(a.cfg.ApiKey())
     return ss
 }
 
@@ -112,6 +126,32 @@ func ParseAdminToken(cfg config.IJwtconfig, tokenString string) (*wymjMapClaims,
     }
 }
 
+
+func ParseApiKey(cfg config.IJwtconfig, tokenString string) (*wymjMapClaims, error) {
+    token, err := jwt.ParseWithClaims(tokenString, &wymjMapClaims{}, func(t *jwt.Token) (interface{}, error) {
+        if _, ok := t.Method.(*jwt.SigningMethodHMAC); !ok {
+            return nil, fmt.Errorf("signing method is invalid")
+        }
+        return cfg.ApiKey(), nil
+    })
+
+    if err != nil {
+        if errors.Is(err, jwt.ErrTokenMalformed) {
+            return nil, fmt.Errorf("token malformed is invalid")
+        } else if errors.Is(err, jwt.ErrTokenExpired) {
+            return nil, fmt.Errorf("token had expired")
+        } else {
+            return nil, fmt.Errorf("parse token failed: %v", err)
+        }
+    }
+
+    if claims, ok := token.Claims.(*wymjMapClaims); ok {
+        return claims, nil
+    } else {
+        return nil, fmt.Errorf("claims type is invalid")
+    }
+}
+
 func RepeatToken(cfg config.IJwtconfig, claims *users.UserClaims, exp int64) string {
     obj := &wymjAuth{
         cfg: cfg,
@@ -139,6 +179,8 @@ func NewWymjAuth(tokenType TokenType, cfg config.IJwtconfig, claims *users.UserC
             return newRefreshToken(cfg, claims), nil
         case Admin:
             return newAdminToken(cfg), nil
+        case ApiKey:
+            return newApiKey(cfg), nil
         default:
             return nil, fmt.Errorf("unknown token type")
     }
@@ -197,3 +239,25 @@ func newAdminToken(cfg config.IJwtconfig) IWymjAuth {
         },
     }
 }
+
+// apikey = apitoken
+func newApiKey(cfg config.IJwtconfig) IWymjAuth {
+    return &wymjApiKey{
+        wymjAuth: &wymjAuth{
+            cfg: cfg,
+            mapClaims: &wymjMapClaims{
+            Claims: nil,
+            RegisteredClaims: jwt.RegisteredClaims{
+                Issuer: "wymj-api",
+                Subject: "api-key",
+                Audience: []string{"admin", "customer"},
+                ExpiresAt: jwt.NewNumericDate(time.Now().AddDate(2, 0, 0)), // 2 years
+                NotBefore: jwt.NewNumericDate(time.Now()),
+                IssuedAt: jwt.NewNumericDate(time.Now()),
+            },
+        },
+
+        },
+    }
+}
+
