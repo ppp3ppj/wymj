@@ -2,6 +2,9 @@ package servers
 
 import (
 	"github.com/gofiber/fiber/v2"
+	appinfohandlers "github.com/ppp3ppj/wymj/modules/appinfo/appinfoHandlers"
+	"github.com/ppp3ppj/wymj/modules/appinfo/appinfoRepositories"
+	"github.com/ppp3ppj/wymj/modules/appinfo/appinfoUsecases"
 	"github.com/ppp3ppj/wymj/modules/middlewares/middlewaresHandlers"
 	"github.com/ppp3ppj/wymj/modules/middlewares/middlewaresRepositories"
 	"github.com/ppp3ppj/wymj/modules/middlewares/middlewaresUsecases"
@@ -60,4 +63,14 @@ func (m *moduleFactory) UserModule() {
     router.Get("/:user_id", m.mid.JwtAuth(), m.mid.ParamsCheck(), handler.GetUserProfile)
     //router.Get("/:user_id", handler.GetUserProfile)
     router.Get("/admin/secret", m.mid.JwtAuth(),m.mid.Authorize(2), handler.GenerateAdminToken)
+}
+
+func (m *moduleFactory) AppinfoModule() {
+    repository := appinfoRepositories.AppinfoRepository(m.s.db)
+    usecase := appinfoUsecases.AppinfoUsecase(repository)
+    handler := appinfohandlers.AppinfoHandler(m.s.cfg, usecase)
+
+    router := m.r.Group("/appinfo")
+    _ = router
+    _ = handler
 }
